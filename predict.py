@@ -44,8 +44,10 @@ def main():
 	print(result)
 	if result >= 0.8:
 	    print('positive')
+	    print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
 	else:
 	    print('negative')
+	    print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
 	return
 
 
