@@ -19,8 +19,9 @@ lemmatizer = WordNetLemmatizer()
 
 def main():
 	english_stopwords = set(stopwords.words('english'))
+	#english_stopwords.remove('not')
 	max_len = 130
-	loaded_model = load_model('models/40000Vocab_sigmoid_lstm.h5')
+	loaded_model = load_model('models/dropout20_40000Vocab_sigmoid_lstm.h5')
 	with open('tokenizer.json') as f:
 	    data = json.load(f)
 	    tokenizer = tokenizer_from_json(data)

@@ -25,6 +25,7 @@ epochs = 5
 batch_size = 128
 global tokenizer
 english_stopwords = set(stopwords.words('english'))
+#english_stopwords.remove('not')
 lemmatizer = WordNetLemmatizer()
 
 def load_dataset(filename):
@@ -82,6 +83,7 @@ def sentiment_classification_model(total_words, max_len):
 	model = tf.keras.Sequential([
 	  tf.keras.layers.Embedding(total_words, embedd_dim, input_length= max_len),
 	  tf.keras.layers.LSTM(lstm_out),
+	  tf.keras.layers.Dropout(0.2),
 	  tf.keras.layers.Dense(1, activation='sigmoid')])
 	model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 	print(model.summary())
@@ -109,14 +111,13 @@ def plot_training(history):
 	plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
 	plt.title('Training and validation accuracy')
 	plt.legend()
-	plt.savefig('lstm_sigmoid_40000vocab_training_validation_accuracy.png')
+	plt.savefig('modified_stopword_dropout20_lstm_sigmoid_40000vocab_training_validation_accuracy.png')
 	plt.figure()
 	plt.plot(epochs, loss, 'r', label='Training Loss')
 	plt.plot(epochs, val_loss, 'b', label='Validation Loss')
 	plt.title('Training and validation loss')
 	plt.legend()
-	plt.savefig('lstm_sigmoid_40000vocab_training_validation_loss.png')
-
+	plt.savefig('modified_stopword_dropout20_lstm_sigmoid_40000vocab_training_validation_loss.png')
 	plt.show()
 
 
@@ -133,5 +134,5 @@ model = sentiment_classification_model(total_words, max_len)
 checkpoint = checkpoint_model()
 history = model.fit(reviews_train, labels_train, validation_data = (reviews_test, labels_test), batch_size = 128, epochs = 5, callbacks=[checkpoint])
 plot_training(history)
-model.save('40000Vocab_sigmoid_lstm.h5')
+model.save('modified_stopword_dropout20_40000Vocab_sigmoid_lstm.h5')
 
