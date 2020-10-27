@@ -96,7 +96,11 @@ def embedd_matrix():
 def sentiment_classification_model(total_words, max_len, embedding_matrix):
 	model = tf.keras.Sequential([
 	  tf.keras.layers.Embedding(total_words, embedd_dim, input_length= max_len),
+	  tf.keras.layers.LSTM(lstm_out, return_sequences = True),
+	  tf.keras.layers.Dropout(0.2),
 	  tf.keras.layers.LSTM(lstm_out),
+	  tf.keras.layers.Dropout(0.2),
+	  #tf.keras.layers.GlobalAveragePooling1D(),
 	  tf.keras.layers.Dense(1, activation='sigmoid')])
 	model.layers[0].set_weights([embedding_matrix])
 	model.layers[0].trainable = False
@@ -126,14 +130,13 @@ def plot_training(history):
 	plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
 	plt.title('Training and validation accuracy')
 	plt.legend()
+	plt.savefig('glove_dropout_stackedLSTM_sigmoid_training_validation_accuracy.png')
 	plt.figure()
-	plt.savefig('glove_lstm_sigmoid_training_validation_accuracy.png')
-
 	plt.plot(epochs, loss, 'r', label='Training Loss')
 	plt.plot(epochs, val_loss, 'b', label='Validation Loss')
 	plt.title('Training and validation loss')
 	plt.legend()
-	plt.savefig('glove_lstm_sigmoid_training_validation_loss.png')
+	plt.savefig('glove_dropout_stackedLSTM_sigmoid_training_validation_loss.png')
 
 	plt.show()
 
@@ -150,5 +153,5 @@ model = sentiment_classification_model(total_words, max_len, embedding_matrix)
 checkpoint = checkpoint_model()
 history = model.fit(reviews_train, labels_train, validation_data = (reviews_test, labels_test), batch_size = 128, epochs = 5, callbacks=[checkpoint])
 plot_training(history)
-model.save('glove_sigmoid_lstm.h5')
+model.save('glove_sigmoid_dropout_stackedLSTM.h5')
 
