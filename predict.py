@@ -19,9 +19,9 @@ lemmatizer = WordNetLemmatizer()
 
 def main():
 	english_stopwords = set(stopwords.words('english'))
-	#english_stopwords.remove('not')
-	max_len = 130
-	loaded_model = load_model('models/dropout20_40000Vocab_sigmoid_lstm.h5')
+	english_stopwords.remove('not')
+	max_len = 100
+	loaded_model = load_model('best_model.h5')
 	with open('tokenizer.json') as f:
 	    data = json.load(f)
 	    tokenizer = tokenizer_from_json(data)
@@ -33,6 +33,9 @@ def main():
 	words = review.split(' ')
 	filtered = [w for w in words if w not in english_stopwords]
 	print(filtered)
+	flag = [True for word in filtered if word.lower() in ['not', 'no', 'wasn\'t', 'never']]
+	if(len(flag)==0):
+		flag=[False]
 	#filtered = [lemmatizer.lemmatize(w, 'a' if tag[0].lower() == 'j' else tag[0].lower()) for w, tag in pos_tag(filtered) if tag[0].lower() in ['j', 'r', 'n', 'v']]
 	#print(filtered)
 	filtered = ' '.join(filtered)
@@ -43,12 +46,21 @@ def main():
 	print(tokenize_words)
 	result = loaded_model.predict(tokenize_words)
 	print(result)
+	print(flag)
 	if result >= 0.8:
-	    print('positive')
-	    print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
+	    if (flag[0] == True):
+	    	print('Negative')
+	    	print("Sentiment Probability \n Positive: " + str(1 - result[0][0]) + ", Negative: " + str(result[0][0]))
+	    else:
+	    	print('positive')
+	    	print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
 	else:
-	    print('negative')
-	    print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
+		if(flag[0] == True):
+			print('positive')
+			print("Sentiment Probability \n Positive: " + str(1 - result[0][0]) + ", Negative: " + str(result[0][0]))
+		else:
+			print('negative')
+			print("Sentiment Probability \n Positive: " + str(result[0][0]) + ", Negative: " + str(1 - result[0][0]))
 	return
 
 
