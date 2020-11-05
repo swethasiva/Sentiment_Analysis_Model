@@ -9,6 +9,7 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.models import Sequential, load_model
 from tensorflow.keras.layers import Dense, Embedding, LSTM
 from tensorflow.keras.callbacks import ModelCheckpoint
+from keras.callbacks import EarlyStopping
 import re
 import json
 import io
@@ -21,11 +22,15 @@ trunc_type = 'post'
 pad_type = 'post'
 embedd_dim = 32
 lstm_out = 64
-epochs = 5
+epochs = 20
 batch_size = 128
 global tokenizer
 english_stopwords = set(stopwords.words('english'))
-#english_stopwords.remove('not')
+english_stopwords.remove('not')
+#print(len(english_stopwords))
+#print(english_stopwords)
+from keras.callbacks import Callback
+
 lemmatizer = WordNetLemmatizer()
 
 def load_dataset(filename):
@@ -67,17 +72,20 @@ def tokenize_pad_trunc(train_reviews, test_reviews, max_len):
 	train_reviews = pad_sequences(train_reviews, maxlen=max_len, padding= pad_type,truncating= trunc_type)
 	test_reviews = pad_sequences(test_reviews, maxlen=max_len, padding= pad_type ,truncating= trunc_type)
 	total_words = int(len(tokenizer.word_index) + 1)
-
-	#print('Encoded X Train\n', train_reviews, '\n')
-	#print('Encoded X Test\n', test_reviews, '\n')
-	#print('Maximum review length: ', max_len)
-	#print(reviews[0])
+	print(total_words)
 	return tokenizer, train_reviews, test_reviews, total_words
 
-def save_tokenizer(tokenizers):
+def save_tokenizer(tokenizer):
 	tokenizer_json = tokenizer.to_json()
 	with io.open('tokenizer.json', 'w', encoding='utf-8') as f:
 		f.write(json.dumps(tokenizer_json, ensure_ascii=False))
+'''
+class stopAtLossValue(Callback):
+	def on_batch_end(self, batch, logs={}):
+		loss_threshold = 0.2
+		if logs.get('loss') <= loss_threshold:
+			print('Loss reached threshold, stopping training')
+			self.model.stop_training = True '''
 
 def sentiment_classification_model(total_words, max_len):
 	model = tf.keras.Sequential([
@@ -88,7 +96,7 @@ def sentiment_classification_model(total_words, max_len):
 	model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 	print(model.summary())
 	return model
-
+'''
 def checkpoint_model():
 	checkpoint = ModelCheckpoint(
 	  'models/LSTM.h5',
@@ -96,7 +104,7 @@ def checkpoint_model():
 	  save_best_only=True,
 	  verbose=1
 	)
-	return checkpoint
+	return checkpoint '''
 
 def plot_training(history):
 	import matplotlib.pyplot as plt
@@ -104,35 +112,40 @@ def plot_training(history):
 	val_acc = history.history['val_accuracy']
 	loss = history.history['loss']
 	val_loss = history.history['val_loss']
-
 	epochs = range(len(acc))
-
 	plt.plot(epochs, acc, 'r', label='Training accuracy')
 	plt.plot(epochs, val_acc, 'b', label='Validation accuracy')
 	plt.title('Training and validation accuracy')
 	plt.legend()
-	plt.savefig('modified_stopword_dropout20_lstm_sigmoid_40000vocab_training_validation_accuracy.png')
+	plt.savefig('20_earlystopping_dropout20_40000Vocab_sigmoid_lstm64_training_validation_accuracy.png')
 	plt.figure()
 	plt.plot(epochs, loss, 'r', label='Training Loss')
 	plt.plot(epochs, val_loss, 'b', label='Validation Loss')
 	plt.title('Training and validation loss')
 	plt.legend()
-	plt.savefig('modified_stopword_dropout20_lstm_sigmoid_40000vocab_training_validation_loss.png')
+	plt.savefig('20_earlystopping_dropout20_40000Vocab_sigmoid_lstm64_training_validation_loss.png')
 	plt.show()
 
+def main():
+	data = load_dataset('IMDB Dataset.csv')
+	reviews, labels = clean_data(data)
+	reviews_train, reviews_test, labels_train, labels_test = split_dataset(reviews, labels)
+	max_len = get_max_length(reviews)
+	#print(max_len)
+	#print(type(reviews_train))
+	tokenizer, reviews_train, reviews_test, total_words = tokenize_pad_trunc(reviews_train, reviews_test, max_len)
+	#print(tokenizer.word_index)
+	save_tokenizer(tokenizer)
+	model = sentiment_classification_model(total_words, max_len)
+	#checkpoint = checkpoint_model()
+	#callbacks = stopAtLossValue()
+	es = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=50)
+	mc = ModelCheckpoint('20_earlystopping_dropout20_40000Vocab_sigmoid_lstm64.h5', monitor='val_loss', mode='min', verbose=1, save_best_only=True)
+	history = model.fit(reviews_train, labels_train, validation_data = (reviews_test, labels_test), batch_size = batch_size, epochs = epochs, callbacks=[es, mc])
+	plot_training(history)
+	#model.save('20_earlystopping_dropout20_40000Vocab_sigmoid_lstm130.h5')
 
-data = load_dataset('IMDB Dataset.csv')
-reviews, labels = clean_data(data)
-reviews_train, reviews_test, labels_train, labels_test = split_dataset(reviews, labels)
-max_len = get_max_length(reviews)
-print(max_len)
-print(type(reviews_train))
-tokenizer, reviews_train, reviews_test, total_words = tokenize_pad_trunc(reviews_train, reviews_test, max_len)
-print(tokenizer.word_index)
-save_tokenizer(tokenizer)
-model = sentiment_classification_model(total_words, max_len)
-checkpoint = checkpoint_model()
-history = model.fit(reviews_train, labels_train, validation_data = (reviews_test, labels_test), batch_size = 128, epochs = 5, callbacks=[checkpoint])
-plot_training(history)
-model.save('modified_stopword_dropout20_40000Vocab_sigmoid_lstm.h5')
+if __name__ == "__main__":
+	main()
+	print('calling')
 
